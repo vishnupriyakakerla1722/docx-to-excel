@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Smart DocX to Excel Converter</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 650px; margin: 50px auto; padding: 20px; background: #f9fafb; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); text-align: center; }
+        .box { border: 2px dashed #2563eb; padding: 30px; border-radius: 10px; margin: 20px 0; background: #eff6ff; }
+        button { background: #2563eb; color: white; border: none; padding: 12px 24px; cursor: pointer; font-size: 16px; border-radius: 6px; margin-top: 15px; font-weight: bold; }
+        button:hover { background: #1d4ed8; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
+        th, td { border: 1px solid #e5e7eb; padding: 10px; text-align: left; }
+        th { background: #f3f4f6; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Smart DocX to Excel Converter</h2>
+        <p>Upload a Word (.docx) file with tables to convert it into an Excel (.xlsx) spreadsheet.</p>
+        <div class="box">
+            <input type="file" id="fileInput" accept=".docx" />
+            <br>
+            <button onclick="uploadFile()">Convert & Download Excel</button>
+        </div>
+        <h3>Conversion History (PostgreSQL)</h3>
+        <table id="historyTable">
+            <tr><th>File Name</th><th>Tables Found</th><th>Status</th></tr>
+        </table>
+    </div>
+    <script>
+        async function uploadFile() {
+            const file = document.getElementById('fileInput').files[0];
+            if (!file) return alert("Please select a .docx file first!");
+            const formData = new FormData();
+            formData.append("file", file);
+            const res = await fetch('/api/convert', { method: 'POST', body: formData });
+            if (!res.ok) return alert("Conversion failed. Make sure it is a valid .docx file.");
+            const blob = await res.blob();
+            const link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.download = file.name.replace('.docx', '.xlsx');
+            link.click();
+            loadHistory();
+        }
+        async function loadHistory() {
+            const res = await fetch('/api/history');
+            const data = await res.json();
+            const table = document.getElementById('historyTable');
+            table.innerHTML = '<tr><th>File Name</th><th>Tables Found</th><th>Status</th></tr>';
+            data.forEach(row => {
+                table.innerHTML += `<tr><td>${row.fileName}</td><td>${row.tablesCount}</td><td>${row.status}</td></tr>`;
+            });
+        }
+        loadHistory();
+    </script>
+</body>
+</html>
